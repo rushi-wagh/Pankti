@@ -134,15 +134,6 @@ Protected endpoints require `Authorization: Bearer <token>`.
 - A queue can have one active serving token at a time.
 - Queue changes are broadcast to connected clients through Socket.IO.
 
-## GitHub submission
-
-Create a repository on GitHub, then run:
-
-```bash
-git init
-git add .
-git commit -m "Build QueueFlow MERN application"
-git branch -M main
-git remote add origin <your-repository-url>
-git push -u origin main
-```
+Demo credientials for manager:
+email : waghrushi22@gmail.com
+passoword: 12345678
