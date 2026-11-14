@@ -7,7 +7,17 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : ['http://localhost:5173'];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);

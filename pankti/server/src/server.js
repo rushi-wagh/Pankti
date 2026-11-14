@@ -5,7 +5,14 @@ import app from './app.js';
 import { connectDatabase } from './config/database.js';
 
 const server = createServer(app);
-const io = new Server(server, { cors: { origin: process.env.CLIENT_URL || 'http://localhost:5173' } });
+const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : ['http://localhost:5173'];
+const io = new Server(server, {
+  cors: {
+    origin: (origin, callback) => callback(null, true),
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
 
 io.on('connection', (socket) => {
   socket.on('queue:join', (queueId) => socket.join(`queue:${queueId}`));
