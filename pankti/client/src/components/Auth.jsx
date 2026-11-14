@@ -31,7 +31,7 @@ export default function Auth() {
       <div className="auth-glow auth-glow-one" />
       <div className="auth-glow auth-glow-two" />
       <div className="auth-card">
-        <div className="auth-brand"><span className="brand-mark">पं</span><span>Pankti<span>.</span></span></div>
+        <div className="auth-brand"><img src="/logo.png" alt="Pankti Logo" className="brand-mark" style={{ objectFit: 'cover' }} /><span>Pankti<span>.</span></span></div>
         <div className="auth-icon"><LockKeyhole size={19} /></div>
         <p className="eyebrow">MANAGER ACCESS</p>
         <h1>Welcome back<span className="heading-period">.</span></h1>
