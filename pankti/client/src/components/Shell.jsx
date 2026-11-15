@@ -14,7 +14,7 @@ export default function Shell({ children }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="logo"><img src="/logo.png" alt="Pankti Logo" className="brand-mark small" style={{ objectFit: 'cover' }} /><b>Pankti<span>.</span></b></div>
+        <NavLink to="/" end className="logo" aria-label="Go to overview"><img src="/logo.png" alt="Pankti Logo" className="brand-mark small" style={{ objectFit: 'cover' }} /><b>Pankti<span>.</span></b></NavLink>
         <div className="nav-label">WORKSPACE</div>
         <nav className="side-nav">
           <NavLink to="/" end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}><LayoutDashboard size={18} />Overview</NavLink>
