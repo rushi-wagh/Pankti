@@ -156,7 +156,7 @@ export default function QueuePage() {
 
       <div className="manage-grid queue-workspace">
         <section className="panel waiting-panel">
-          <div className="panel-head"><div><h2>Waiting list <span className="count">{waiting.length}</span></h2><p className="muted">Reorder the line or cancel a token.</p></div></div>
+          <div className="panel-head"><div><h2>Waiting list <span className="count">{waiting.length}</span></h2><p className="muted">{draggedTokenId ? 'Release over a person to place them here.' : 'Drag any row to reorder the line.'}</p></div><span className={`drag-help ${draggedTokenId ? 'active' : ''}`}>{draggedTokenId ? 'Release to place' : 'Drag to reorder'}</span></div>
           <form className="add-form" onSubmit={add}><input placeholder="Enter person's name" value={name} onChange={event => setName(event.target.value)} required maxLength={80} /><button className="primary" disabled={adding || !name.trim()}><Plus size={16} />{adding ? 'Adding…' : 'Add customer'}</button></form>
           {waiting.length ? <div className="token-list">{waiting.map(token => <div
             className={`token-row ${draggedTokenId === token.id ? 'dragging' : ''} ${dragOverTokenId === token.id ? 'drag-over' : ''}`}
@@ -164,6 +164,7 @@ export default function QueuePage() {
             draggable
             tabIndex="0"
             aria-label={`Reorder ${token.name}`}
+            aria-grabbed={draggedTokenId === token.id}
             onDragStart={event => {
               event.dataTransfer.setData('text/plain', token.id);
               event.dataTransfer.effectAllowed = 'move';
