@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { ArrowLeft, Check, Clock3, GripVertical, Play, Plus, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock3, Play, Plus, Users, X } from 'lucide-react';
 import { api, API } from '../lib/api';
 import Shell from '../components/Shell';
 
@@ -159,8 +159,20 @@ export default function QueuePage() {
           <div className="panel-head"><div><h2>Waiting list <span className="count">{waiting.length}</span></h2><p className="muted">Reorder the line or cancel a token.</p></div></div>
           <form className="add-form" onSubmit={add}><input placeholder="Enter person's name" value={name} onChange={event => setName(event.target.value)} required maxLength={80} /><button className="primary" disabled={adding || !name.trim()}><Plus size={16} />{adding ? 'Adding…' : 'Add customer'}</button></form>
           {waiting.length ? <div className="token-list">{waiting.map(token => <div
-            className={`token-row ${dragOverTokenId === token.id ? 'drag-over' : ''}`}
+            className={`token-row ${draggedTokenId === token.id ? 'dragging' : ''} ${dragOverTokenId === token.id ? 'drag-over' : ''}`}
             key={token.id}
+            draggable
+            tabIndex="0"
+            aria-label={`Reorder ${token.name}`}
+            onDragStart={event => {
+              event.dataTransfer.setData('text/plain', token.id);
+              event.dataTransfer.effectAllowed = 'move';
+              setDraggedTokenId(token.id);
+            }}
+            onDragEnd={() => {
+              setDraggedTokenId('');
+              setDragOverTokenId('');
+            }}
             onDragOver={event => {
               event.preventDefault();
               event.dataTransfer.dropEffect = 'move';
@@ -170,30 +182,13 @@ export default function QueuePage() {
               event.preventDefault();
               dropToken(token);
             }}
+            onKeyDown={event => {
+              if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                moveToken(token, event.key === 'ArrowUp' ? 'up' : 'down');
+              }
+            }}
           >
-            <span
-              className={`drag-handle ${draggedTokenId === token.id ? 'dragging' : ''}`}
-              draggable
-              tabIndex="0"
-              role="button"
-              aria-label={`Reorder ${token.name}`}
-              title="Drag to reorder"
-              onDragStart={event => {
-                event.dataTransfer.setData('text/plain', token.id);
-                event.dataTransfer.effectAllowed = 'move';
-                setDraggedTokenId(token.id);
-              }}
-              onDragEnd={() => {
-                setDraggedTokenId('');
-                setDragOverTokenId('');
-              }}
-              onKeyDown={event => {
-                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-                  event.preventDefault();
-                  moveToken(token, event.key === 'ArrowUp' ? 'up' : 'down');
-                }
-              }}
-            ><GripVertical size={17} /></span>
             <span className="token-number">{tokenLabel(token.number)}</span>
             <div className="token-person"><b>{token.name}</b><small>Added {new Date(token.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div>
             <span className="status waiting">Waiting</span>
