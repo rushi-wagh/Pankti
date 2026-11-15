@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { ArrowDown, ArrowLeft, ArrowUp, Check, Clock3, Play, Plus, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, Clock3, GripVertical, Play, Plus, Users, X } from 'lucide-react';
 import { api, API } from '../lib/api';
 import Shell from '../components/Shell';
 
@@ -17,6 +17,8 @@ export default function QueuePage() {
   const [adding, setAdding] = useState(false);
   const [servingNext, setServingNext] = useState(false);
   const [busyToken, setBusyToken] = useState('');
+  const [draggedTokenId, setDraggedTokenId] = useState('');
+  const [dragOverTokenId, setDragOverTokenId] = useState('');
   const nav = useNavigate();
 
   async function load() {
@@ -63,6 +65,43 @@ export default function QueuePage() {
       setError(err.response?.data?.error || 'Action failed');
     } finally {
       setBusyToken('');
+    }
+  }
+
+  async function moveToken(token, direction) {
+    if (busyToken || token.status !== 'WAITING') return;
+    setBusyToken(token.id);
+    try {
+      await api.patch(`/queues/${id}/tokens/${token.id}`, { action: direction });
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not reorder token');
+    } finally {
+      setBusyToken('');
+    }
+  }
+
+  async function dropToken(targetToken) {
+    if (!draggedTokenId || draggedTokenId === targetToken.id || busyToken) return;
+    const sourceIndex = waiting.findIndex(token => token.id === draggedTokenId);
+    const targetIndex = waiting.findIndex(token => token.id === targetToken.id);
+    const sourceToken = waiting[sourceIndex];
+    if (!sourceToken || targetIndex < 0) return;
+
+    const direction = sourceIndex < targetIndex ? 'down' : 'up';
+    const steps = Math.abs(sourceIndex - targetIndex);
+    setBusyToken(sourceToken.id);
+    try {
+      for (let step = 0; step < steps; step += 1) {
+        await api.patch(`/queues/${id}/tokens/${sourceToken.id}`, { action: direction });
+      }
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not reorder token');
+    } finally {
+      setBusyToken('');
+      setDraggedTokenId('');
+      setDragOverTokenId('');
     }
   }
 
@@ -119,11 +158,46 @@ export default function QueuePage() {
         <section className="panel waiting-panel">
           <div className="panel-head"><div><h2>Waiting list <span className="count">{waiting.length}</span></h2><p className="muted">Reorder the line or cancel a token.</p></div></div>
           <form className="add-form" onSubmit={add}><input placeholder="Enter person's name" value={name} onChange={event => setName(event.target.value)} required maxLength={80} /><button className="primary" disabled={adding || !name.trim()}><Plus size={16} />{adding ? 'Adding…' : 'Add customer'}</button></form>
-          {waiting.length ? <div className="token-list">{waiting.map((token, index) => <div className="token-row" key={token.id}>
+          {waiting.length ? <div className="token-list">{waiting.map(token => <div
+            className={`token-row ${dragOverTokenId === token.id ? 'drag-over' : ''}`}
+            key={token.id}
+            onDragOver={event => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+              if (draggedTokenId !== token.id) setDragOverTokenId(token.id);
+            }}
+            onDrop={event => {
+              event.preventDefault();
+              dropToken(token);
+            }}
+          >
+            <span
+              className={`drag-handle ${draggedTokenId === token.id ? 'dragging' : ''}`}
+              draggable
+              tabIndex="0"
+              role="button"
+              aria-label={`Reorder ${token.name}`}
+              title="Drag to reorder"
+              onDragStart={event => {
+                event.dataTransfer.setData('text/plain', token.id);
+                event.dataTransfer.effectAllowed = 'move';
+                setDraggedTokenId(token.id);
+              }}
+              onDragEnd={() => {
+                setDraggedTokenId('');
+                setDragOverTokenId('');
+              }}
+              onKeyDown={event => {
+                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  moveToken(token, event.key === 'ArrowUp' ? 'up' : 'down');
+                }
+              }}
+            ><GripVertical size={17} /></span>
             <span className="token-number">{tokenLabel(token.number)}</span>
             <div className="token-person"><b>{token.name}</b><small>Added {new Date(token.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div>
             <span className="status waiting">Waiting</span>
-            <div className="actions"><button className="icon-btn" title="Move up" disabled={index === 0 || busyToken === token.id} onClick={() => act(token, 'up')}><ArrowUp size={16} /></button><button className="icon-btn" title="Move down" disabled={index === waiting.length - 1 || busyToken === token.id} onClick={() => act(token, 'down')}><ArrowDown size={16} /></button><button className="icon-btn danger" title="Cancel token" disabled={busyToken === token.id} onClick={() => act(token, 'cancel')}><X size={16} /></button></div>
+            <div className="actions"><button className="icon-btn danger" title="Cancel token" disabled={busyToken === token.id} onClick={() => act(token, 'cancel')}><X size={16} /></button></div>
           </div>)}</div> : <div className="empty compact"><div className="empty-icon"><Users /></div><b>Queue is clear</b><p>No one is waiting right now. Add a customer to get started.</p></div>}
         </section>
 
